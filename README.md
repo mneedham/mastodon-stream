@@ -7,9 +7,8 @@ I wanted to start exploring Mastodon usage, and perform some exploratory data an
 Tools used
 - [Mastodon.py](https://mastodonpy.readthedocs.io/) - Python library for interacting with the Mastodon API
 - [Apache Kafka](https://kafka.apache.org/) - distributed event streaming platform
-- [DuckDB](https://duckdb.org/) - in-process SQL OLAP database and the [HTTPFS DuckDB extension](https://duckdb.org/docs/extensions/httpfs.html) for reading remote/writing remote files of object storage using the S3 API
-- [MinIO](https://min.io/) - S3 compatible server
-- [Seaborn](https://seaborn.pydata.org/) - visualization library 
+- [Apache Pinot](https://dev.startree.ai/docs/pinot/recipes/) - Real-Time OLAP database
+- [Streamlit](https://streamlit.io/) - Python web framework
 
 
 ![mastodon architecture](./docs/pinot_architecture.png)
