@@ -12,7 +12,7 @@ Tools used
 - [Seaborn](https://seaborn.pydata.org/) - visualization library 
 
 
-![mastodon architecture](./docs/mastodon_arch.png)
+![mastodon architecture](./docs/pinot_architecture.png)
 
 # Data processing
 We will us Kafka as distributed stream processing platform to collect data from multiple instances. To run Kafka, Kafka Connect (with the S3 sink connector) and schema registry (to support AVRO serialisation) and MinIO setup containers with this command
