@@ -1,10 +1,10 @@
 {
-    "tableName": "mastodon_decoder",
+    "tableName": "mastodon",
     "tableType": "REALTIME",
     "segmentsConfig": {
       "timeColumnName": "created_at",
       "timeType": "MILLISECONDS",
-      "schemaName": "mastodon_decoder",
+      "schemaName": "mastodon",
       "replicasPerPartition": "1"
     },
     "tenants": {},

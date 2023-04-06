@@ -36,8 +36,8 @@ class Listener(mastodon.StreamListener):
         app=''
         # attribute only available on local
         if hasattr(status, 'application'):
-            print(status.application)
-            app = status.application.get('name')
+            if status.application:
+                app = status.application.get('name')
 
         now_dt=datetime.datetime.now()
         
