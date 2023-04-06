@@ -11,16 +11,18 @@ def acked(err, msg):
         print('Message produced: %s' % msg.value().decode('utf-8'))
 
 
-def kafka_producer():
+def kafka_producer(schema_name="mastodon-topic"):
     producer_config = {
         'bootstrap.servers': 'localhost:9092',
         'schema.registry.url': 'http://localhost:8081', 
         'broker.address.family': 'v4'
     }
 
-    value_schema = avro.load('avro/mastodon-topic-value.avsc')
+    value_schema = avro.load(f"avro/{schema_name}-value.avsc")
     producer = AvroProducer(producer_config, default_value_schema=value_schema)
-    return 'mastodon-topic', producer
+    return schema_name, producer
+
+
 
 def main():
     # example test producer

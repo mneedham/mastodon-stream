@@ -49,6 +49,15 @@ The python `mastodonlisten` application listens for public posts to the specifie
 python mastodonlisten.py --baseURL https://mastodon.social --enableKafka
 ```
 
+```console
+python mastodonlisten.py --baseURL https://data-folks.masto.host --public --enableKafka --quiet
+python mastodonlisten.py --baseURL https://fosstodon.org/ --public --enableKafka --quiet
+python mastodonlisten.py --baseURL https://mstdn.social/ --public --enableKafka --quiet
+
+https://arvr.social/
+https://tty0.social/
+```
+
 ## Testing producer (optional)
 As an optional step, you can check that AVRO messages are being written to kafka
 
@@ -56,20 +65,22 @@ As an optional step, you can check that AVRO messages are being written to kafka
 kafka-avro-console-consumer --bootstrap-server localhost:9092 --topic mastodon-topic --from-beginning
 ```
 
-
-# Kafka Connect
-To load the Kafka Connect [config](./config/mastodon-sink-s3-minio.json) file run the following
-
 ```console
-curl -X PUT -H  "Content-Type:application/json" localhost:8083/connectors/mastodon-sink-s3/config -d '@./config/mastodon-sink-s3-minio.json'
+kcat -C -b localhost:9092 -t mastodon-topic -s value=avro -r http://localhost:8081 -e
 ```
 
-# Open s3 browser
-Go to the MinIO web browser http://localhost:9001/
+## Pinot
 
-- username `minio`
-- password `minio123`
-
+```bash
+docker run \
+   --network mastodon \
+   -v $PWD/pinot:/config \
+   apachepinot/pinot:0.12.0-arm64 AddTable \
+     -schemaFile /config/schema.json \
+     -tableConfigFile /config/table.json \
+     -controllerHost "pinot-controller" \
+    -exec
+```
 
 # Data analysis
 Now we have collected a week of Mastodon activity, let's have a look at some data. These steps are detailed in the [notebook](./notebooks/mastodon-analysis.ipynb)
@@ -142,3 +153,12 @@ deactivate
 
 If you want to re-enter the virtual environment just follow the same instructions above about activating a virtual environment. There’s no need to re-create the virtual environment.
 
+## Debugging
+
+http://localhost:8081/schemas/latest_with_type=mastodon-topic-value
+http://localhost:8081/schemas?latest_with_type=mastodon-topic-value
+https://github.com/apache/pinot/issues/9990
+
+https://itsfoss.com/best-mastodon-instances/#1-fosstodon
+
+https://betterprogramming.pub/mastodon-usage-counting-toots-with-kafka-duckdb-seaborn-42215c9488ac

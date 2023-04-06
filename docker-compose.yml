@@ -1,31 +1,22 @@
----
 version: '3.9'
 services:
   zookeeper:
-    image: confluentinc/cp-zookeeper:${CONF_VER}
-    platform: linux/amd64
+    image: zookeeper:3.8.0
     hostname: zookeeper
     container_name: zookeeper
     ports:
       - "2181:2181"
-    healthcheck:
-      test: nc -z localhost 2181 || exit -1
-      start_period: 15s
-      interval: 5s
-      timeout: 10s
-      retries: 30
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
+    networks: 
+      - mastodon
 
   broker:
     image: confluentinc/cp-server:${CONF_VER}
-    platform: linux/amd64
+    platform: linux/arm64
     hostname: broker
     container_name: broker
-    depends_on:
-      zookeeper:
-        condition: service_healthy
     ports:
       - "9092:9092"
       - "9101:9101"
@@ -39,7 +30,7 @@ services:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://broker:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://broker:9093,PLAINTEXT_HOST://localhost:9092
       KAFKA_METRIC_REPORTERS: io.confluent.metrics.reporter.ConfluentMetricsReporter
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
@@ -50,19 +41,17 @@ services:
       KAFKA_JMX_PORT: 9101
       KAFKA_JMX_HOSTNAME: localhost
       KAFKA_CONFLUENT_SCHEMA_REGISTRY_URL: http://schema-registry:8081
-      CONFLUENT_METRICS_REPORTER_BOOTSTRAP_SERVERS: broker:29092
+      CONFLUENT_METRICS_REPORTER_BOOTSTRAP_SERVERS: broker:9093
       CONFLUENT_METRICS_REPORTER_TOPIC_REPLICAS: 1
       CONFLUENT_METRICS_ENABLE: 'false'
-      CONFLUENT_SUPPORT_CUSTOMER_ID: 'anonymous'
+    networks: 
+      - mastodon
 
   schema-registry:
     image: confluentinc/cp-schema-registry:${CONF_VER}
     platform: linux/amd64
     hostname: schema-registry
     container_name: schema-registry
-    depends_on:
-      broker:
-        condition: service_healthy
     ports:
       - "8081:8081"
     healthcheck:
@@ -73,74 +62,45 @@ services:
       retries: 300
     environment:
       SCHEMA_REGISTRY_HOST_NAME: schema-registry
-      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: 'broker:29092'
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: 'broker:9093'
       SCHEMA_REGISTRY_LISTENERS: http://0.0.0.0:8081
+    networks: 
+      - mastodon
 
-  connect:
-    build:
-      context: ./kafka-connect
-      dockerfile: Dockerfile    
-    platform: linux/amd64
-    hostname: connect
-    container_name: connect
-    depends_on:
-      schema-registry:
-        condition: service_healthy
+  pinot-controller:
+    image: apachepinot/pinot:latest-local-20230403b
+    command: "StartController -zkAddress zookeeper:2181"
+    container_name: "pinot-controller"
+    restart: unless-stopped
     ports:
-      - "8083:8083"
-    healthcheck:
-      test: nc -z localhost 8083 || exit -1
-      start_period: 15s
-      interval: 5s
-      timeout: 10s
-      retries: 30      
-    environment:
-      CONNECT_BOOTSTRAP_SERVERS: 'broker:29092'
-      CONNECT_REST_ADVERTISED_HOST_NAME: connect
-      CONNECT_GROUP_ID: compose-connect-group
-      CONNECT_CONFIG_STORAGE_TOPIC: docker-connect-configs
-      CONNECT_CONFIG_STORAGE_REPLICATION_FACTOR: 1
-      CONNECT_OFFSET_FLUSH_INTERVAL_MS: 10000
-      CONNECT_OFFSET_STORAGE_TOPIC: docker-connect-offsets
-      CONNECT_OFFSET_STORAGE_REPLICATION_FACTOR: 1
-      CONNECT_STATUS_STORAGE_TOPIC: docker-connect-status
-      CONNECT_STATUS_STORAGE_REPLICATION_FACTOR: 1
-      CONNECT_KEY_CONVERTER: org.apache.kafka.connect.storage.StringConverter
-      CONNECT_VALUE_CONVERTER: io.confluent.connect.avro.AvroConverter
-      CONNECT_VALUE_CONVERTER_SCHEMA_REGISTRY_URL: http://schema-registry:8081
-      # CLASSPATH required due to CC-2422
-      CLASSPATH: /usr/share/java/monitoring-interceptors/monitoring-interceptors-${CONF_VER}.jar
-      CONNECT_PRODUCER_INTERCEPTOR_CLASSES: "io.confluent.monitoring.clients.interceptor.MonitoringProducerInterceptor"
-      CONNECT_CONSUMER_INTERCEPTOR_CLASSES: "io.confluent.monitoring.clients.interceptor.MonitoringConsumerInterceptor"
-      # CONNECT_PLUGIN_PATH: "/usr/share/connect_plugin,/usr/share/confluent-hub-components"
-      CONNECT_PLUGIN_PATH: "/usr/share/confluent-hub-components"
-      CONNECT_LOG4J_LOGGERS: org.apache.zookeeper=ERROR,org.I0Itec.zkclient=ERROR,org.reflections=ERROR
-
-  minio:
-    hostname: minio
-    image: 'minio/minio:latest'
-    container_name: minio
-    ports:
-      - "9001:9001"
       - "9000:9000"
-    command: [ "server", "/data", "--console-address", ":9001" ]
-    volumes:
-      - ./data:/data
-    environment:
-      MINIO_ROOT_USER: minio
-      MINIO_ROOT_PASSWORD: minio123
-      MINIO_ACCESS_KEY: minio
-      MINIO_SECRET_KEY: minio123
-  mc:
     depends_on:
-      - minio
-    image: minio/mc
-    container_name: mc
-    entrypoint: >
-      /bin/sh -c "
-      until (/usr/bin/mc config host add minio http://minio:9000 minio minio123) do echo '...waiting...' && sleep 1; done;
-      /usr/bin/mc rm -r --force minio/mastodon;
-      /usr/bin/mc mb minio/mastodon;
-      /usr/bin/mc policy set public minio/mastodon;
-      exit 0;
-      "
+      - zookeeper
+    networks: 
+      - mastodon
+  pinot-broker:
+    image: apachepinot/pinot:latest-local-20230403b
+    command: "StartBroker -zkAddress zookeeper:2181"
+    restart: unless-stopped
+    container_name: "pinot-broker"
+    ports:
+      - "8099:8099"
+    depends_on:
+      - pinot-controller
+    networks: 
+      - mastodon
+  pinot-server:
+    image: apachepinot/pinot:latest-local-20230403b
+    command: "StartServer -zkAddress zookeeper:2181"
+    restart: unless-stopped
+    container_name: "pinot-server"
+    ports:
+      - "5006:5005"
+    environment:
+      JAVA_OPTS: "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005"
+    networks: 
+      - mastodon
+
+networks:
+  mastodon:
+    name: mastodon

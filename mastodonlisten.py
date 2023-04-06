@@ -36,6 +36,7 @@ class Listener(mastodon.StreamListener):
         app=''
         # attribute only available on local
         if hasattr(status, 'application'):
+            print(status.application)
             app = status.application.get('name')
 
         now_dt=datetime.datetime.now()
@@ -54,11 +55,18 @@ class Listener(mastodon.StreamListener):
             'tags': num_tags, 
             'characters': num_chars, 
             'words': num_words, 
-            'mastodon_text': m_text
+            'mastodon_text': m_text,
+            # 'account': {
+            #     'followers_count': status.account.followers_count,
+            #     'following_count': status.account.following_count,
+            #     'statuses_count': status.account.statuses_count,
+            # }
         }
 
         if not quiet:
-            print(f'{m_user} {m_lang}', m_text[:30])
+            # print(f'{m_user} {m_lang}', m_text[:30])
+            print(value_dict)
+            # print(status)
 
 
         if enable_kafka:
@@ -142,8 +150,7 @@ def main():
     enable_kafka=args.enableKafka
 
     if enable_kafka:
-        topic_name, producer = kafka_producer()
-
+        topic_name, producer = kafka_producer(schema_name="mastodon-topic")
         
 
     mastodon = Mastodon(api_base_url = base_url)
