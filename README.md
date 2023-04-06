@@ -1,4 +1,4 @@
-# Mastodon usage - counting toots with DuckDB  
+# Mastodon usage - counting toots with Apache Pinot  
 
 [Mastodon](https://joinmastodon.org/) is a _decentralized_ social networking platform. Mastodon users are members of a _specific_ Mastodon server, and servers are capable of joining other servers to form a global (or at least federated) social network.
 
