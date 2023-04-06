@@ -48,13 +48,16 @@ The python `mastodonlisten` application listens for public posts to the specifie
 python mastodonlisten.py --baseURL https://mastodon.social --enableKafka
 ```
 
+These ones create a reasonable amount of messages:
+
 ```console
-python mastodonlisten.py --baseURL https://data-folks.masto.host --public --enableKafka --quiet
+
 python mastodonlisten.py --baseURL https://fosstodon.org/ --public --enableKafka --quiet
 python mastodonlisten.py --baseURL https://mstdn.social/ --public --enableKafka --quiet
-
-https://arvr.social/
-https://tty0.social/
+python mastodonlisten.py --baseURL https://mastodon.cloud/ --public --enableKafka --quiet
+python mastodonlisten.py --baseURL https://mas.to/ --public --enableKafka --quiet
+python mastodonlisten.py --baseURL https://universeodon.com --public --enableKafka --quiet
+python mastodonlisten.py --baseURL https://masto.ai/ --public --enableKafka --quiet
 ```
 
 ## Testing producer (optional)
@@ -114,8 +117,6 @@ from read_parquet('s3://mastodon/topics/mastodon-topic/partition=0/*');
 We can query the `mastodon_toot` table directly to see the number of _toots_, _users_ each day by counting and grouping the activity by the day
 
 We can use the [mode](https://duckdb.org/docs/sql/aggregates.html#statistical-aggregates) aggregate function to find the most frequent "bot" and "not-bot" users to find the most active Mastodon users
-
-
 
 ## The Mastodon app landscape
 What clients are used to access mastodon instances. We take the query the `mastodon_toot` table, excluding "bots" and load query results into the `mastodon_app_df` Panda dataframe. [Seaborn](https://seaborn.pydata.org/) is a visualization library for statistical graphics  in Python, built on the top of [matplotlib](https://matplotlib.org/). It also works really well with Panda data structures.
