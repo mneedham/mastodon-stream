@@ -14,7 +14,7 @@ Tools used
 ![mastodon architecture](./docs/pinot_architecture.png)
 
 # Data processing
-We will us Kafka as distributed stream processing platform to collect data from multiple instances. To run Kafka, Kafka Connect (with the S3 sink connector) and schema registry (to support AVRO serialisation) and MinIO setup containers with this command
+We will us Kafka as distributed stream processing platform to collect data from multiple instances. To run Kafka and Apache Pinot, run the following:
 
 ```console
  docker-compose up -d
@@ -85,80 +85,11 @@ docker run \
 ```
 
 # Data analysis
-Now we have collected a week of Mastodon activity, let's have a look at some data. These steps are detailed in the [notebook](./notebooks/mastodon-analysis.ipynb)
 
+To analyze the data, we're going to use Streamlit, which you can run with the following command:
 
-## Query parquet files directly from s3 using DuckDB
-
-Load the [HTTPFS DuckDB extension](https://duckdb.org/docs/extensions/httpfs.html) for reading remote/writing remote files of object storage using the S3 API
-
-```console
-INSTALL httpfs;
-LOAD httpfs;
-
-set s3_endpoint='localhost:9000';
-set s3_access_key_id='minio';
-set s3_secret_access_key='minio123';
-set s3_use_ssl=false;
-set s3_url_style='path';
+``bash
+streamlit run app.py
 ```
 
-And you can now query the parquet files directly from s3
-
-```sql
-select *
-from read_parquet('s3://mastodon/topics/mastodon-topic/partition=0/*');
-```
-
-![SQL](./docs/select_from_s3_result.png)
-
-## Daily Mastodon usage
-
-We can query the `mastodon_toot` table directly to see the number of _toots_, _users_ each day by counting and grouping the activity by the day
-
-We can use the [mode](https://duckdb.org/docs/sql/aggregates.html#statistical-aggregates) aggregate function to find the most frequent "bot" and "not-bot" users to find the most active Mastodon users
-
-## The Mastodon app landscape
-What clients are used to access mastodon instances. We take the query the `mastodon_toot` table, excluding "bots" and load query results into the `mastodon_app_df` Panda dataframe. [Seaborn](https://seaborn.pydata.org/) is a visualization library for statistical graphics  in Python, built on the top of [matplotlib](https://matplotlib.org/). It also works really well with Panda data structures.
-
-![App usage](./docs/app_usage.png)
-
-
-## Time of day Mastodon usage
-Let's see when Mastodon is used throughout the day and night. I want to get a raw hourly cound of _toots_ each hour of each day. We can load the results of this query into the `mastodon_usage_df` dataframe
-
-![hour of day](./docs/hr_of_day_usage.png)
-
-## Language usage
-A wildly inaccurate investigation of language tags
-
-![language usage](./docs/language_usage.png)
-
-## Language density
-A wildly inaccurate investigation of language tags
-
-![language density](./docs/language_density.png)
-
-
-
-# Optional steps
-
-
-## Cleanup of virtual environment
-If you want to switch projects or otherwise leave your virtual environment, simply run:
-
-```console
-deactivate
-```
-
-If you want to re-enter the virtual environment just follow the same instructions above about activating a virtual environment. There’s no need to re-create the virtual environment.
-
-## Debugging
-
-http://localhost:8081/schemas/latest_with_type=mastodon-topic-value
-http://localhost:8081/schemas?latest_with_type=mastodon-topic-value
-https://github.com/apache/pinot/issues/9990
-
-https://itsfoss.com/best-mastodon-instances/#1-fosstodon
-
-https://betterprogramming.pub/mastodon-usage-counting-toots-with-kafka-duckdb-seaborn-42215c9488ac
+Once you've done that, navigate to http://localhost:8501
