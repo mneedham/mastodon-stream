@@ -88,7 +88,7 @@ docker run \
 
 To analyze the data, we're going to use Streamlit, which you can run with the following command:
 
-``bash
+```bash
 streamlit run app.py
 ```
 
